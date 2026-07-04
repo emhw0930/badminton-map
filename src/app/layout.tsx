@@ -26,11 +26,16 @@ export default function RootLayout({
       <body>
         <header className="site-header">
           <Link href="/" className="brand">
-            🏸 台灣羽球地圖
+            <span className="logo">🏸</span>
+            台灣羽球地圖
           </Link>
           <nav>
-            <Link href="/">地圖</Link>
-            <Link href="/submit">回報球場</Link>
+            <Link href="/" className="nav-link">
+              地圖
+            </Link>
+            <Link href="/submit" className="nav-cta">
+              + 回報球場
+            </Link>
           </nav>
         </header>
         <main>{children}</main>

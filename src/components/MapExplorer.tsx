@@ -1,18 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { Court } from "@/lib/types";
 
-// 地圖只在瀏覽器渲染(maplibre-gl 依賴 window)
-const MapView = dynamic(() => import("./MapView"), { ssr: false });
+const MapView = dynamic(() => import("./MapView"), {
+  ssr: false,
+  loading: () => <div className="map-loading">地圖載入中…</div>,
+});
 
 export default function MapExplorer({ courts }: { courts: Court[] }) {
   const [query, setQuery] = useState("");
-  const [city, setCity] = useState<string>("all");
+  const [city, setCity] = useState("all");
   const [acOnly, setAcOnly] = useState(false);
   const [active, setActive] = useState<string | null>(null);
+
+  // 延遲搜尋值,避免每個按鍵都重算/重繪地圖
+  const deferredQuery = useDeferredValue(query);
 
   const cities = useMemo(
     () => Array.from(new Set(courts.map((c) => c.city))).sort(),
@@ -20,75 +25,111 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
   );
 
   const filtered = useMemo(() => {
-    const q = query.trim();
+    const q = deferredQuery.trim();
     return courts.filter((c) => {
       if (city !== "all" && c.city !== city) return false;
       if (acOnly && !c.has_ac) return false;
-      if (q) {
-        const hay = `${c.name}${c.district ?? ""}${c.address ?? ""}`;
-        if (!hay.includes(q)) return false;
-      }
+      if (q && !`${c.name}${c.district ?? ""}${c.address ?? ""}`.includes(q))
+        return false;
       return true;
     });
-  }, [courts, query, city, acOnly]);
+  }, [courts, deferredQuery, city, acOnly]);
 
   return (
     <div className="map-layout">
       <aside className="sidebar">
-        <div className="filters">
-          <input
-            placeholder="搜尋球場名稱 / 地區…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <select value={city} onChange={(e) => setCity(e.target.value)}>
-            <option value="all">全部縣市</option>
-            {cities.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          <button
-            className={`chip ${acOnly ? "active" : ""}`}
-            onClick={() => setAcOnly((v) => !v)}
-          >
-            ❄️ 有冷氣
-          </button>
+        <div className="toolbar">
+          <div className="search">
+            <SearchIcon />
+            <input
+              placeholder="搜尋球場名稱、地區…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="搜尋球場"
+            />
+          </div>
+          <div className="chips">
+            <span className="chip select">
+              <select
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                aria-label="選擇縣市"
+              >
+                <option value="all">全部縣市</option>
+                {cities.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </span>
+            <button
+              className={`chip ${acOnly ? "active" : ""}`}
+              onClick={() => setAcOnly((v) => !v)}
+              aria-pressed={acOnly}
+            >
+              ❄️ 有冷氣
+            </button>
+          </div>
         </div>
 
-        <div>
-          <p style={{ padding: "10px 16px", color: "var(--muted)", margin: 0 }}>
-            共 {filtered.length} 個球場
-          </p>
+        <div className="result-count">
+          {filtered.length} 個羽球場
+        </div>
+
+        <div className="court-list">
           {filtered.map((c) => (
             <div
               key={c.slug}
-              className="court-card"
+              className={`court-card ${active === c.slug ? "active" : ""}`}
               onClick={() => setActive(c.slug)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") setActive(c.slug);
+              }}
             >
               <h3>{c.name}</h3>
-              <div className="court-meta">
-                <span>
-                  {c.city}
-                  {c.district ?? ""}
-                </span>
-                {c.court_count ? <span>{c.court_count} 片場地</span> : null}
-                <span className={`badge ${c.has_ac ? "ac" : "no-ac"}`}>
-                  {c.has_ac ? "❄️ 有冷氣" : "無冷氣"}
-                </span>
+              <div className="loc">
+                📍 {c.city}
+                {c.district ?? ""}
               </div>
-              <div style={{ marginTop: 8 }}>
-                <Link href={`/courts/${c.slug}`} onClick={(e) => e.stopPropagation()}>
+              <div className="tags">
+                {c.court_count ? (
+                  <span className="tag">🏸 {c.court_count} 片場地</span>
+                ) : null}
+                <span className={`tag ${c.has_ac ? "ac" : "warm"}`}>
+                  {c.has_ac ? "❄️ 有冷氣" : "☀️ 無冷氣"}
+                </span>
+                {c.booking_url ? (
+                  <span className="tag">🔗 可線上預約</span>
+                ) : null}
+              </div>
+              <div style={{ marginTop: 10 }}>
+                <Link
+                  href={`/courts/${c.slug}`}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    color: "var(--primary-ink)",
+                    fontSize: 13,
+                    fontWeight: 600,
+                  }}
+                >
                   查看詳情 →
                 </Link>
               </div>
             </div>
           ))}
           {filtered.length === 0 && (
-            <p style={{ padding: 16, color: "var(--muted)" }}>
+            <div className="empty">
               找不到符合條件的球場。
-            </p>
+              <br />
+              試試調整篩選,或{" "}
+              <Link href="/submit" style={{ color: "var(--primary-ink)", fontWeight: 600 }}>
+                回報新球場
+              </Link>
+              。
+            </div>
           )}
         </div>
       </aside>
@@ -97,5 +138,14 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
         <MapView courts={filtered} activeSlug={active} onSelect={setActive} />
       </div>
     </div>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
   );
 }

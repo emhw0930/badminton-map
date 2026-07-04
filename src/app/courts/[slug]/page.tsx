@@ -34,77 +34,82 @@ export default async function CourtDetail({ params }: Params) {
 
   return (
     <article className="detail">
-      <p>
-        <Link href="/">← 回地圖</Link>
-      </p>
-      <h1>{court.name}</h1>
-      <p className="court-meta">
-        <span className={`badge ${court.has_ac ? "ac" : "no-ac"}`}>
-          {court.has_ac ? "❄️ 有冷氣" : "無冷氣"}
-        </span>
-        {court.court_count ? (
-          <span className="badge">{court.court_count} 片場地</span>
-        ) : null}
-      </p>
+      <Link href="/" className="back-link">
+        ← 回地圖
+      </Link>
 
-      <div style={{ marginTop: 18 }}>
-        <Row label="縣市地區" value={`${court.city}${court.district ?? ""}`} />
-        <Row label="地址" value={court.address} />
-        <Row label="營業時間" value={court.opening_hours} />
-        <Row label="收費" value={court.price_note} />
-        <Row
-          label="電話"
-          value={
-            court.phone ? <a href={`tel:${court.phone}`}>{court.phone}</a> : null
-          }
-        />
-        <Row label="備註" value={court.notes} />
-      </div>
+      <div className="detail-hero">
+        <h1>{court.name}</h1>
+        <div className="loc">
+          📍 {court.city}
+          {court.district ?? ""}
+          {court.address ? ` · ${court.address}` : ""}
+        </div>
+        <div className="tags">
+          <span className={`tag ${court.has_ac ? "ac" : "warm"}`}>
+            {court.has_ac ? "❄️ 有冷氣" : "☀️ 無冷氣"}
+          </span>
+          {court.court_count ? (
+            <span className="tag">🏸 {court.court_count} 片場地</span>
+          ) : null}
+        </div>
 
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        {court.booking_url ? (
+        <div className="info-grid">
+          <Cell k="營業時間" v={court.opening_hours} />
+          <Cell k="收費" v={court.price_note} />
+          <Cell
+            k="電話"
+            v={court.phone ? <a href={`tel:${court.phone}`}>{court.phone}</a> : null}
+          />
+          <Cell k="備註" v={court.notes} />
+        </div>
+
+        <div className="cta-row">
+          {court.booking_url ? (
+            <a
+              className="btn primary"
+              href={court.booking_url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              前往預約 →
+            </a>
+          ) : (
+            <span className="btn disabled">尚無線上預約(請電話洽詢)</span>
+          )}
           <a
-            className="btn"
-            href={court.booking_url}
+            className="btn ghost"
+            href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
           >
-            前往預約 →
+            🗺️ Google 地圖導航
           </a>
-        ) : (
-          <span className="btn secondary" style={{ cursor: "default" }}>
-            此球場尚無線上預約(請電話洽詢)
-          </span>
-        )}
-        <a
-          className="btn secondary"
-          href={mapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          在 Google 地圖開啟
-        </a>
+        </div>
       </div>
 
-      <p style={{ marginTop: 24, color: "var(--muted)", fontSize: 13 }}>
-        資訊有誤?<Link href="/submit">回報給我們</Link>。
+      <p style={{ marginTop: 20, color: "var(--muted)", fontSize: 13 }}>
+        資訊有誤?{" "}
+        <Link href="/submit" style={{ color: "var(--primary-ink)", fontWeight: 600 }}>
+          回報給我們
+        </Link>
+        。
       </p>
     </article>
   );
 }
 
-function Row({
-  label,
-  value,
+function Cell({
+  k,
+  v,
 }: {
-  label: string;
-  value: React.ReactNode | null | undefined;
+  k: string;
+  v: React.ReactNode | null | undefined;
 }) {
-  if (!value) return null;
   return (
-    <div className="row">
-      <span className="label">{label}</span>
-      <span>{value}</span>
+    <div className="info-cell">
+      <div className="k">{k}</div>
+      <div className="v">{v || <span style={{ color: "var(--muted)" }}>—</span>}</div>
     </div>
   );
 }

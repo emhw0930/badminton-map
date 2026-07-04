@@ -1,11 +1,22 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import Map, {
+  Source,
+  Layer,
+  Popup,
+  NavigationControl,
+  type MapRef,
+  type MapLayerMouseEvent,
+} from "react-map-gl/maplibre";
+import type { LayerProps } from "react-map-gl/maplibre";
+import type { GeoJSONSource } from "maplibre-gl";
 import type { Court } from "@/lib/types";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-// 免費、免 API key 的向量地圖底圖(OpenFreeMap)
+// 免費、免 API key 的向量底圖
 const MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+const SOURCE_ID = "courts";
 
 type Props = {
   courts: Court[];
@@ -13,84 +24,155 @@ type Props = {
   onSelect?: (slug: string) => void;
 };
 
+// 群集圓圈:依數量放大、變深
+const clusterLayer: LayerProps = {
+  id: "clusters",
+  type: "circle",
+  source: SOURCE_ID,
+  filter: ["has", "point_count"],
+  paint: {
+    "circle-color": [
+      "step",
+      ["get", "point_count"],
+      "#34d399",
+      10,
+      "#0ea766",
+      30,
+      "#0a8a53",
+    ],
+    "circle-radius": ["step", ["get", "point_count"], 18, 10, 24, 30, 30],
+    "circle-stroke-width": 3,
+    "circle-stroke-color": "rgba(255,255,255,0.85)",
+  },
+};
+
+const clusterCountLayer: LayerProps = {
+  id: "cluster-count",
+  type: "symbol",
+  source: SOURCE_ID,
+  filter: ["has", "point_count"],
+  layout: {
+    "text-field": "{point_count_abbreviated}",
+    "text-size": 13,
+    "text-font": ["Noto Sans Regular"],
+  },
+  paint: { "text-color": "#ffffff" },
+};
+
+// 單一球場圓點
+const unclusteredLayer: LayerProps = {
+  id: "unclustered-point",
+  type: "circle",
+  source: SOURCE_ID,
+  filter: ["!", ["has", "point_count"]],
+  paint: {
+    "circle-color": "#0ea766",
+    "circle-radius": 8,
+    "circle-stroke-width": 3,
+    "circle-stroke-color": "#ffffff",
+  },
+};
+
 export default function MapView({ courts, activeSlug, onSelect }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  // 用 ref 存放 maplibre 的 map 實例與 marker,避免重複建立
-  const mapRef = useRef<import("maplibre-gl").Map | null>(null);
-  const markersRef = useRef<Record<string, import("maplibre-gl").Marker>>({});
+  const mapRef = useRef<MapRef>(null);
+  const [popup, setPopup] = useState<Court | null>(null);
 
-  // 建立地圖(只跑一次)。maplibre-gl 只能在瀏覽器執行,故動態 import。
-  useEffect(() => {
-    let cancelled = false;
+  const geojson = useMemo(
+    () => ({
+      type: "FeatureCollection" as const,
+      features: courts.map((c) => ({
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: [c.lng, c.lat] },
+        properties: { slug: c.slug, name: c.name },
+      })),
+    }),
+    [courts]
+  );
 
-    (async () => {
-      const maplibregl = (await import("maplibre-gl")).default;
-      if (cancelled || !containerRef.current || mapRef.current) return;
+  // 點選:群集就放大展開,單點就選取 + 開 popup
+  const handleClick = useCallback(
+    (e: MapLayerMouseEvent) => {
+      const feature = e.features?.[0];
+      if (!feature) return;
+      const map = mapRef.current;
+      if (!map) return;
 
-      const map = new maplibregl.Map({
-        container: containerRef.current,
-        style: MAP_STYLE,
-        center: [121.53, 25.03], // 台北盆地
-        zoom: 10,
-      });
-      map.addControl(new maplibregl.NavigationControl(), "top-right");
-      mapRef.current = map;
-
-      map.on("load", () => {
-        courts.forEach((court) => {
-          const el = document.createElement("div");
-          el.style.cssText =
-            "width:16px;height:16px;border-radius:50%;background:#38bdf8;border:2px solid #04121b;cursor:pointer;box-shadow:0 0 0 2px rgba(56,189,248,.35)";
-
-          const popup = new maplibregl.Popup({ offset: 18 }).setHTML(
-            `<strong>${escapeHtml(court.name)}</strong><br/>` +
-              `<a href="/courts/${court.slug}">查看詳情 →</a>`
-          );
-
-          const marker = new maplibregl.Marker({ element: el })
-            .setLngLat([court.lng, court.lat])
-            .setPopup(popup)
-            .addTo(map);
-
-          el.addEventListener("click", () => onSelect?.(court.slug));
-          markersRef.current[court.slug] = marker;
+      if (feature.properties?.point_count) {
+        const clusterId = feature.properties.cluster_id;
+        const src = map.getSource(SOURCE_ID) as GeoJSONSource;
+        src.getClusterExpansionZoom(clusterId).then((zoom) => {
+          const [lng, lat] = (feature.geometry as GeoJSON.Point).coordinates;
+          map.flyTo({ center: [lng, lat], zoom, duration: 600 });
         });
-      });
-    })();
+      } else {
+        const slug = feature.properties?.slug as string;
+        const court = courts.find((c) => c.slug === slug);
+        if (court) {
+          setPopup(court);
+          onSelect?.(slug);
+        }
+      }
+    },
+    [courts, onSelect]
+  );
 
-    return () => {
-      cancelled = true;
-      mapRef.current?.remove();
-      mapRef.current = null;
-      markersRef.current = {};
-    };
-    // 只建立一次;courts 變動時不重建地圖(篩選在側欄處理)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // 側欄點選 → 飛過去
+  const active = courts.find((c) => c.slug === activeSlug);
+  if (active && mapRef.current) {
+    mapRef.current.flyTo({
+      center: [active.lng, active.lat],
+      zoom: Math.max(mapRef.current.getZoom(), 13),
+      duration: 700,
+    });
+  }
 
-  // 點選側欄時,飛到對應球場並打開 popup
-  useEffect(() => {
-    if (!activeSlug) return;
-    const court = courts.find((c) => c.slug === activeSlug);
-    const marker = markersRef.current[activeSlug];
-    if (!court || !mapRef.current || !marker) return;
-    mapRef.current.flyTo({ center: [court.lng, court.lat], zoom: 14 });
-    marker.togglePopup();
-  }, [activeSlug, courts]);
+  return (
+    <Map
+      ref={mapRef}
+      mapStyle={MAP_STYLE}
+      initialViewState={{ longitude: 121.53, latitude: 25.03, zoom: 10 }}
+      minZoom={6}
+      maxZoom={18}
+      interactiveLayerIds={["clusters", "unclustered-point"]}
+      onClick={handleClick}
+      cursor="auto"
+      onMouseEnter={() => {
+        if (mapRef.current) mapRef.current.getCanvas().style.cursor = "pointer";
+      }}
+      onMouseLeave={() => {
+        if (mapRef.current) mapRef.current.getCanvas().style.cursor = "";
+      }}
+    >
+      <NavigationControl position="top-right" showCompass={false} />
 
-  return <div id="map" ref={containerRef} />;
-}
+      <Source
+        id={SOURCE_ID}
+        type="geojson"
+        data={geojson}
+        cluster
+        clusterRadius={50}
+        clusterMaxZoom={14}
+      >
+        <Layer {...clusterLayer} />
+        <Layer {...clusterCountLayer} />
+        <Layer {...unclusteredLayer} />
+      </Source>
 
-function escapeHtml(s: string) {
-  return s.replace(
-    /[&<>"']/g,
-    (c) =>
-      ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-      })[c] as string
+      {popup && (
+        <Popup
+          longitude={popup.lng}
+          latitude={popup.lat}
+          anchor="bottom"
+          offset={16}
+          closeButton
+          onClose={() => setPopup(null)}
+        >
+          <div className="popup-title">{popup.name}</div>
+          <a className="popup-link" href={`/courts/${popup.slug}`}>
+            查看詳情 →
+          </a>
+        </Popup>
+      )}
+    </Map>
   );
 }

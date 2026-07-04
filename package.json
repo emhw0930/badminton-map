@@ -15,7 +15,8 @@
     "maplibre-gl": "^4.7.1",
     "next": "^15.1.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-map-gl": "^7.1.9"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
