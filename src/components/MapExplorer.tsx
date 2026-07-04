@@ -68,7 +68,7 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
               onClick={() => setAcOnly((v) => !v)}
               aria-pressed={acOnly}
             >
-              ❄️ 有冷氣
+              有冷氣
             </button>
           </div>
         </div>
@@ -99,7 +99,7 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
                   <span className="tag">{c.court_count} 片場地</span>
                 ) : null}
                 <span className={`tag ${c.has_ac ? "ac" : "warm"}`}>
-                  {c.has_ac ? "❄️ 有冷氣" : "無冷氣"}
+                  {c.has_ac ? "有冷氣" : "無冷氣"}
                 </span>
                 {c.booking_url ? (
                   <span className="tag">可線上預約</span>

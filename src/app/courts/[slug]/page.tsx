@@ -47,7 +47,7 @@ export default async function CourtDetail({ params }: Params) {
         </div>
         <div className="tags">
           <span className={`tag ${court.has_ac ? "ac" : "warm"}`}>
-            {court.has_ac ? "❄️ 有冷氣" : "無冷氣"}
+            {court.has_ac ? "有冷氣" : "無冷氣"}
           </span>
           {court.court_count ? (
             <span className="tag">{court.court_count} 片場地</span>
