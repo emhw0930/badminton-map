@@ -8,7 +8,7 @@ export type Court = {
   lat: number;
   lng: number;
   court_count: number | null;
-  has_ac: boolean;
+  has_ac: boolean | null; // null = 冷氣資訊未確認(政府資料集無此欄位)
   phone: string | null;
   booking_url: string | null;
   opening_hours: string | null;

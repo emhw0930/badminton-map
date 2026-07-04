@@ -9,8 +9,9 @@ type Params = { params: Promise<{ slug: string }> };
 export const revalidate = 300;
 
 export async function generateStaticParams() {
+  // 全台近千頁,建置時只預產前 50 頁;其餘第一次被訪問時生成並快取(ISR)
   const courts = await getCourts();
-  return courts.map((c) => ({ slug: c.slug }));
+  return courts.slice(0, 50).map((c) => ({ slug: c.slug }));
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
@@ -84,9 +85,11 @@ export default async function CourtDetail({ params }: Params) {
           {court.address ? ` · ${court.address}` : ""}
         </div>
         <div className="tags">
-          <span className={`tag ${court.has_ac ? "ac" : "warm"}`}>
-            {court.has_ac ? "有冷氣" : "無冷氣"}
-          </span>
+          {court.has_ac != null && (
+            <span className={`tag ${court.has_ac ? "ac" : "warm"}`}>
+              {court.has_ac ? "有冷氣" : "無冷氣"}
+            </span>
+          )}
           {court.court_count ? (
             <span className="tag">{court.court_count} 片場地</span>
           ) : null}

@@ -10,6 +10,9 @@ const MapView = dynamic(() => import("./MapView"), {
   loading: () => <div className="map-loading">地圖載入中…</div>,
 });
 
+// 側欄清單一次最多渲染的筆數(全台資料近千筆,地圖仍顯示全部)
+const LIST_CAP = 80;
+
 export default function MapExplorer({ courts }: { courts: Court[] }) {
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("all");
@@ -75,10 +78,11 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
 
         <div className="result-count">
           {filtered.length} 個羽球場
+          {filtered.length > LIST_CAP && `(清單顯示前 ${LIST_CAP} 筆)`}
         </div>
 
         <div className="court-list">
-          {filtered.map((c) => (
+          {filtered.slice(0, LIST_CAP).map((c) => (
             <div
               key={c.slug}
               className={`court-card ${active === c.slug ? "active" : ""}`}
@@ -98,9 +102,11 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
                 {c.court_count ? (
                   <span className="tag">{c.court_count} 片場地</span>
                 ) : null}
-                <span className={`tag ${c.has_ac ? "ac" : "warm"}`}>
-                  {c.has_ac ? "有冷氣" : "無冷氣"}
-                </span>
+                {c.has_ac != null && (
+                  <span className={`tag ${c.has_ac ? "ac" : "warm"}`}>
+                    {c.has_ac ? "有冷氣" : "無冷氣"}
+                  </span>
+                )}
                 {c.booking_url ? (
                   <span className="tag">可線上預約</span>
                 ) : null}
