@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { sampleCourts } from "@/data/sample";
 import type { Court } from "@/lib/types";
 
@@ -9,12 +9,20 @@ function hasSupabase() {
   );
 }
 
+// 公開讀取用的 client:不碰 cookies,讓頁面可以走 ISR 靜態快取(SEO/速度更好)。
+function publicClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false } }
+  );
+}
+
 /** 取得所有已發佈球場;未設定 Supabase 時回傳示範資料。 */
 export async function getCourts(): Promise<Court[]> {
   if (!hasSupabase()) return sampleCourts;
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data, error } = await publicClient()
     .from("courts")
     .select("*")
     .eq("status", "published")
@@ -33,8 +41,7 @@ export async function getCourtBySlug(slug: string): Promise<Court | null> {
     return sampleCourts.find((c) => c.slug === slug) ?? null;
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data, error } = await publicClient()
     .from("courts")
     .select("*")
     .eq("slug", slug)

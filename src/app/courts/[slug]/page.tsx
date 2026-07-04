@@ -1,9 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCourtBySlug } from "@/lib/courts";
+import { getCourtBySlug, getCourts } from "@/lib/courts";
 
 type Params = { params: Promise<{ slug: string }> };
+
+// ISR:建置時預先產生所有球場頁(靜態、秒開、SEO 最佳),每 5 分鐘更新
+export const revalidate = 300;
+
+export async function generateStaticParams() {
+  const courts = await getCourts();
+  return courts.map((c) => ({ slug: c.slug }));
+}
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
@@ -14,11 +22,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     court.court_count ? `${court.court_count} 片場地、` : ""
   }${court.has_ac ? "有冷氣" : "無冷氣"}${
     court.opening_hours ? `,營業時間 ${court.opening_hours}` : ""
-  }。`;
+  }${court.booking_url ? ",可線上預約" : ""}。`;
 
   return {
-    title: court.name,
+    title: `${court.name} 羽球場資訊與預約`,
     description: desc,
+    alternates: { canonical: `/courts/${court.slug}` },
     openGraph: { title: court.name, description: desc },
   };
 }
@@ -32,8 +41,37 @@ export default async function CourtDetail({ params }: Params) {
     court.address ?? court.name
   )}`;
 
+  // SportsActivityLocation 結構化資料:讓 Google 以「場館」理解此頁,
+  // 有機會在搜尋結果顯示地址、電話、營業時間等 rich results。
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SportsActivityLocation",
+    name: court.name,
+    sport: "Badminton",
+    ...(court.address && {
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: court.address,
+        addressLocality: court.city,
+        addressCountry: "TW",
+      },
+    }),
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: court.lat,
+      longitude: court.lng,
+    },
+    ...(court.phone && { telephone: court.phone }),
+    ...(court.booking_url && { url: court.booking_url }),
+    ...(court.opening_hours && { openingHours: court.opening_hours }),
+  };
+
   return (
     <article className="detail">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Link href="/" className="back-link">
         ← 回地圖
       </Link>
