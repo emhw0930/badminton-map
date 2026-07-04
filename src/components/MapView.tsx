@@ -15,7 +15,7 @@ import type { Court } from "@/lib/types";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 // 免費、免 API key 的向量底圖(Positron:極簡淺灰風格,突顯球場標記)
-const MAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
+const MAP_STYLE = "https://tiles.openfreemap.org/styles/bright";
 const SOURCE_ID = "courts";
 
 type Props = {
