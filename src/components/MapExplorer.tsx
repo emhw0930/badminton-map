@@ -96,13 +96,13 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
               </div>
               <div className="tags">
                 {c.court_count ? (
-                  <span className="tag">🏸 {c.court_count} 片場地</span>
+                  <span className="tag">{c.court_count} 片場地</span>
                 ) : null}
                 <span className={`tag ${c.has_ac ? "ac" : "warm"}`}>
-                  {c.has_ac ? "❄️ 有冷氣" : "☀️ 無冷氣"}
+                  {c.has_ac ? "❄️ 有冷氣" : "無冷氣"}
                 </span>
                 {c.booking_url ? (
-                  <span className="tag">🔗 可線上預約</span>
+                  <span className="tag">可線上預約</span>
                 ) : null}
               </div>
               <div style={{ marginTop: 10 }}>

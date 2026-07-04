@@ -56,7 +56,30 @@ export default function SubmitPage() {
     return (
       <div className="form-page">
         <div className="form-card" style={{ alignItems: "center", textAlign: "center", gap: 12 }}>
-          <div style={{ fontSize: 44 }}>🎉</div>
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: "50%",
+              background: "var(--primary-soft)",
+              display: "grid",
+              placeItems: "center",
+            }}
+          >
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--primary-ink)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          </div>
           <h1 style={{ margin: 0 }}>感謝你的回報!</h1>
           <p className="sub" style={{ margin: 0 }}>
             我們會盡快審核並更新地圖。

@@ -26,7 +26,24 @@ export default function RootLayout({
       <body>
         <header className="site-header">
           <Link href="/" className="brand">
-            <span className="logo">🏸</span>
+            <span className="logo">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#fff"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="7" cy="17" r="3.2" />
+                <path d="M9.5 14.5 19 5" />
+                <path d="m13 8 4-3.5" />
+                <path d="m16 11 3.5-4" />
+              </svg>
+            </span>
             台灣羽球地圖
           </Link>
           <nav>
