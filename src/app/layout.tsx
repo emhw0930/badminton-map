@@ -52,20 +52,35 @@ export default function RootLayout({
           <Link href="/" className="brand">
             <span className="logo">
               <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                viewBox="0 0 100 100"
                 fill="none"
-                stroke="#fff"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
                 aria-hidden="true"
               >
-                <circle cx="7" cy="17" r="3.2" />
-                <path d="M9.5 14.5 19 5" />
-                <path d="m13 8 4-3.5" />
-                <path d="m16 11 3.5-4" />
+                <g transform="rotate(38 50 50)">
+                  <polygon
+                    fill="#ffffff"
+                    points="50,61 27,20 35,14 44,19 50,13 56,19 65,14 73,20"
+                  />
+                  <line
+                    x1="44"
+                    y1="22"
+                    x2="48.5"
+                    y2="54"
+                    stroke="#0a8a53"
+                    strokeWidth="4"
+                  />
+                  <line
+                    x1="56"
+                    y1="22"
+                    x2="51.5"
+                    y2="54"
+                    stroke="#0a8a53"
+                    strokeWidth="4"
+                  />
+                  <circle cx="50" cy="71" r="11" fill="#ffffff" />
+                </g>
               </svg>
             </span>
             台灣羽球地圖
