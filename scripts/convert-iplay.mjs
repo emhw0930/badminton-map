@@ -15,8 +15,10 @@ import { readFileSync, writeFileSync } from "fs";
 import { createHash } from "crypto";
 
 const csvPath = process.argv[2];
+// --fresh:產出「清空重建」SQL(先 delete 全表,且不跳過精選場館,全部改用政府資料)
+const FRESH = process.argv.includes("--fresh");
 if (!csvPath) {
-  console.error("用法: node scripts/convert-iplay.mjs <csv路徑>");
+  console.error("用法: node scripts/convert-iplay.mjs <csv路徑> [--fresh]");
   process.exit(1);
 }
 
@@ -101,8 +103,8 @@ for (const r of usable) {
       ? `${org} ${rawName}`.trim()
       : rawName;
 
-  // 與精選資料重複者跳過
-  if (CURATED_CORES.some((core) => name.includes(core))) { skippedCurated++; continue; }
+  // 與精選資料重複者跳過(--fresh 模式不跳過,全部用政府資料)
+  if (!FRESH && CURATED_CORES.some((core) => name.includes(core))) { skippedCurated++; continue; }
 
   // 同名同址去重
   const key = `${name}|${address}`;
@@ -137,6 +139,11 @@ const BATCH = 200;
 let sql = `-- 體育署全國運動場館資料匯入(羽球場館,${out.length} 筆)
 -- 由 scripts/convert-iplay.mjs 產生,可整份貼進 Supabase SQL Editor 執行。
 -- 重複執行安全:slug 已存在的列會自動跳過。\n\n`;
+if (FRESH) {
+  sql = `-- 全新重建:先清空 courts 再匯入政府資料 ${out.length} 筆
+-- (delete 而非 truncate:保留 court_submissions 回報資料,FK 會自動設為 null)
+delete from public.courts;\n\n` + sql;
+}
 for (let i = 0; i < out.length; i += BATCH) {
   sql += `insert into public.courts (slug, name, city, district, address, lat, lng, court_count, has_ac, phone, booking_url, opening_hours, price_note, notes)\nvalues\n`;
   sql += out.slice(i, i + BATCH).join(",\n");
