@@ -135,6 +135,12 @@ export default function MapView({ courts, activeSlug, onSelect }: Props) {
       maxZoom={18}
       interactiveLayerIds={["clusters", "unclustered-point"]}
       onClick={handleClick}
+      onLoad={() => {
+        // 容器尺寸在初始化當下可能還沒定案(canvas 會卡在 400x300 預設值),
+        // load 後主動校正一次,再保險補一次
+        mapRef.current?.resize();
+        setTimeout(() => mapRef.current?.resize(), 300);
+      }}
       cursor="auto"
       onMouseEnter={() => {
         if (mapRef.current) mapRef.current.getCanvas().style.cursor = "pointer";
