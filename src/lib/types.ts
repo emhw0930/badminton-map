@@ -14,6 +14,7 @@ export type Court = {
   opening_hours: string | null;
   price_note: string | null;
   notes: string | null;
+  raw?: Record<string, string> | null; // 體育署普查完整原始欄位
   status: string;
   created_at: string;
   updated_at: string;

@@ -26,7 +26,8 @@ create table public.courts (
   opening_hours text,                         -- 營業時間(自由文字)
   price_note   text,                          -- 收費說明
   notes        text,                          -- 其他備註
-  status       text not null default 'published', -- published / hidden
+  raw          jsonb,                         -- 原始資料(如體育署普查完整欄位)
+  status       text not null default 'published', -- published / hidden(hidden = 不對外開放,網站不顯示)
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
