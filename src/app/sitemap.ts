@@ -11,9 +11,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: c.updated_at ? new Date(c.updated_at) : new Date(),
   }));
 
+  const cities = Array.from(new Set(courts.map((c) => c.city)));
+  const cityUrls = cities.map((city) => ({
+    url: `${BASE}/city/${encodeURIComponent(city)}`,
+    lastModified: new Date(),
+  }));
+
   return [
     { url: BASE, lastModified: new Date() },
     { url: `${BASE}/submit`, lastModified: new Date() },
+    ...cityUrls,
     ...courtUrls,
   ];
 }

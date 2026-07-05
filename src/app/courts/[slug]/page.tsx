@@ -91,7 +91,13 @@ export default async function CourtDetail({ params }: Params) {
       <div className="detail-hero">
         <h1>{court.name}</h1>
         <div className="loc">
-          📍 {court.city}
+          📍{" "}
+          <Link
+            href={`/city/${court.city}`}
+            style={{ color: "inherit", textDecoration: "underline" }}
+          >
+            {court.city}
+          </Link>
           {court.district ?? ""}
           {court.address ? ` · ${court.address}` : ""}
         </div>

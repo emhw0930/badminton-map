@@ -35,6 +35,7 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("all");
   const [acOnly, setAcOnly] = useState(false);
+  const [freeOnly, setFreeOnly] = useState(false);
   const [active, setActive] = useState<string | null>(null);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(
     null
@@ -82,6 +83,8 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
     return courts.filter((c) => {
       if (city !== "all" && c.city !== city) return false;
       if (acOnly && !c.has_ac) return false;
+      // 免費 = 開放情形或租借資訊含「免費對外」
+      if (freeOnly && !c.price_note?.includes("免費對外")) return false;
       if (tokens.length > 0) {
         const hay = norm(
           `${c.name}${c.city}${c.district ?? ""}${c.address ?? ""}`
@@ -90,7 +93,7 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
       }
       return true;
     });
-  }, [courts, deferredQuery, city, acOnly]);
+  }, [courts, deferredQuery, city, acOnly, freeOnly]);
 
   // 有定位時依距離排序
   const sorted = useMemo(() => {
@@ -136,6 +139,13 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
               aria-pressed={acOnly}
             >
               有冷氣
+            </button>
+            <button
+              className={`chip ${freeOnly ? "active" : ""}`}
+              onClick={() => setFreeOnly((v) => !v)}
+              aria-pressed={freeOnly}
+            >
+              免費
             </button>
             <button
               className={`chip ${userLoc ? "active" : ""}`}

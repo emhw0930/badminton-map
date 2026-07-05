@@ -119,6 +119,50 @@ button {
   color: var(--primary-ink);
   font-weight: 600;
 }
+.footer-cities {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 14px;
+  max-width: 720px;
+  margin: 0 auto 14px;
+}
+.footer-cities a {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 12.5px;
+}
+.footer-cities a:hover {
+  color: var(--primary-ink);
+}
+
+/* ============ 縣市頁 ============ */
+.city-title {
+  margin: 0 0 8px;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+.city-sub {
+  color: var(--muted);
+  font-size: 14.5px;
+  margin: 0 0 10px;
+}
+.city-district {
+  margin: 26px 0 10px;
+  font-size: 16px;
+  color: #344054;
+}
+.city-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+.city-page .court-card {
+  margin-bottom: 0;
+}
+.city-page .court-card h3 {
+  font-size: 15px;
+}
 
 /* ============ Map layout ============ */
 .map-layout {

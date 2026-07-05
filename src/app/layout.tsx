@@ -96,8 +96,20 @@ export default function RootLayout({
         </header>
         <main>{children}</main>
         <footer className="site-footer">
+          <nav className="footer-cities" aria-label="各縣市羽球場">
+            {[
+              "臺北市", "新北市", "桃園市", "臺中市", "臺南市", "高雄市",
+              "基隆市", "新竹市", "新竹縣", "苗栗縣", "彰化縣", "南投縣",
+              "雲林縣", "嘉義市", "嘉義縣", "屏東縣", "宜蘭縣", "花蓮縣",
+              "臺東縣", "澎湖縣", "金門縣", "連江縣",
+            ].map((c) => (
+              <Link key={c} href={`/city/${c}`}>
+                {c}羽球場
+              </Link>
+            ))}
+          </nav>
           <p>
-            資料由社群共同維護,若有錯誤或缺漏歡迎{" "}
+            資料來源:教育部體育署與社群共同維護,若有錯誤或缺漏歡迎{" "}
             <Link href="/submit">回報</Link>。
           </p>
         </footer>
