@@ -412,6 +412,26 @@ button {
     grid-template-columns: 1fr;
   }
 }
+.detail-section {
+  margin-top: 20px;
+  padding: 18px 20px;
+  background: var(--surface-2);
+  border-radius: 14px;
+}
+.detail-section h2 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.detail-section p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.75;
+  white-space: pre-line;
+}
+
 .cta-row {
   display: flex;
   gap: 12px;

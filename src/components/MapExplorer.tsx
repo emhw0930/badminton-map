@@ -13,11 +13,58 @@ const MapView = dynamic(() => import("./MapView"), {
 // 側欄清單一次最多渲染的筆數(全台資料近千筆,地圖仍顯示全部)
 const LIST_CAP = 80;
 
+// 兩點間距離(公里,Haversine)
+function distanceKm(
+  aLat: number,
+  aLng: number,
+  bLat: number,
+  bLng: number
+): number {
+  const R = 6371;
+  const dLat = ((bLat - aLat) * Math.PI) / 180;
+  const dLng = ((bLng - aLng) * Math.PI) / 180;
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((aLat * Math.PI) / 180) *
+      Math.cos((bLat * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+}
+
 export default function MapExplorer({ courts }: { courts: Court[] }) {
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("all");
   const [acOnly, setAcOnly] = useState(false);
   const [active, setActive] = useState<string | null>(null);
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
+  const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState("");
+
+  function toggleNearMe() {
+    if (userLoc) {
+      setUserLoc(null); // 再按一次取消
+      return;
+    }
+    setLocError("");
+    if (!navigator.geolocation) {
+      setLocError("此瀏覽器不支援定位");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocating(false);
+      },
+      () => {
+        setLocError("無法取得位置,請確認已允許定位權限");
+        setLocating(false);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+    );
+  }
 
   // 延遲搜尋值,避免每個按鍵都重算/重繪地圖
   const deferredQuery = useDeferredValue(query);
@@ -44,6 +91,16 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
       return true;
     });
   }, [courts, deferredQuery, city, acOnly]);
+
+  // 有定位時依距離排序
+  const sorted = useMemo(() => {
+    if (!userLoc) return filtered;
+    return [...filtered].sort(
+      (a, b) =>
+        distanceKm(userLoc.lat, userLoc.lng, a.lat, a.lng) -
+        distanceKm(userLoc.lat, userLoc.lng, b.lat, b.lng)
+    );
+  }, [filtered, userLoc]);
 
   return (
     <div className="map-layout">
@@ -80,7 +137,20 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
             >
               有冷氣
             </button>
+            <button
+              className={`chip ${userLoc ? "active" : ""}`}
+              onClick={toggleNearMe}
+              disabled={locating}
+              aria-pressed={!!userLoc}
+            >
+              {locating ? "定位中…" : "📍 離我最近"}
+            </button>
           </div>
+          {locError && (
+            <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--danger)" }}>
+              {locError}
+            </div>
+          )}
         </div>
 
         <div className="result-count">
@@ -89,7 +159,7 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
         </div>
 
         <div className="court-list">
-          {filtered.slice(0, LIST_CAP).map((c) => (
+          {sorted.slice(0, LIST_CAP).map((c) => (
             <div
               key={c.slug}
               className={`court-card ${active === c.slug ? "active" : ""}`}
@@ -104,6 +174,8 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
               <div className="loc">
                 📍 {c.city}
                 {c.district ?? ""}
+                {userLoc &&
+                  ` · ${distanceKm(userLoc.lat, userLoc.lng, c.lat, c.lng).toFixed(1)} km`}
               </div>
               <div className="tags">
                 {c.court_count ? (

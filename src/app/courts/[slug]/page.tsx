@@ -42,9 +42,20 @@ export default async function CourtDetail({ params }: Params) {
     court.address ?? court.name
   )}`;
 
+  // 體育署普查完整欄位(匯入時存於 raw jsonb)
+  const raw = court.raw ?? {};
+  const intro = raw["運動場館介紹"];
+  const supplement = raw["開放及休館時間補充說明"];
+  const eventNote =
+    raw["賽事經歷說明"] ??
+    (raw["舉辦賽事經歷"]?.startsWith("曾") ? raw["舉辦賽事經歷"] : undefined);
+  const area = raw["總運動空間面積_平方公尺"];
+  const openYear = raw["場館啟用年"];
+
   // SportsActivityLocation 結構化資料:讓 Google 以「場館」理解此頁,
   // 有機會在搜尋結果顯示地址、電話、營業時間等 rich results。
   const jsonLd = {
+    ...(intro && { description: intro }),
     "@context": "https://schema.org",
     "@type": "SportsActivityLocation",
     name: court.name,
@@ -102,8 +113,22 @@ export default async function CourtDetail({ params }: Params) {
             k="電話"
             v={court.phone ? <a href={`tel:${court.phone}`}>{court.phone}</a> : null}
           />
-          <Cell k="備註" v={court.notes} />
+          {raw["開放情形"] ? (
+            <Cell k="開放情形" v={raw["開放情形"]} />
+          ) : (
+            <Cell k="備註" v={court.notes} />
+          )}
+          {raw["停車場種類"] && <Cell k="停車場" v={raw["停車場種類"]} />}
+          {area && <Cell k="運動空間面積" v={`${area} 平方公尺`} />}
+          {openYear && <Cell k="場館啟用" v={`民國 ${openYear} 年`} />}
+          {raw["場館隸屬機關"] && (
+            <Cell k="隸屬機關" v={raw["場館隸屬機關"]} />
+          )}
         </div>
+
+        {intro && <Section title="場館介紹" text={intro} />}
+        {supplement && <Section title="開放時間補充說明" text={supplement} />}
+        {eventNote && <Section title="賽事經歷" text={eventNote} />}
 
         <div className="cta-row">
           {court.booking_url ? (
@@ -130,13 +155,22 @@ export default async function CourtDetail({ params }: Params) {
       </div>
 
       <p style={{ marginTop: 20, color: "var(--muted)", fontSize: 13 }}>
-        資訊有誤?{" "}
+        {court.raw ? "資料來源:教育部體育署全國運動場館資料。" : ""}資訊有誤?{" "}
         <Link href="/submit" style={{ color: "var(--primary-ink)", fontWeight: 600 }}>
           回報給我們
         </Link>
         。
       </p>
     </article>
+  );
+}
+
+function Section({ title, text }: { title: string; text: string }) {
+  return (
+    <section className="detail-section">
+      <h2>{title}</h2>
+      <p>{text}</p>
+    </section>
   );
 }
 
