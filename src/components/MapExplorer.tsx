@@ -28,12 +28,19 @@ export default function MapExplorer({ courts }: { courts: Court[] }) {
   );
 
   const filtered = useMemo(() => {
-    const q = deferredQuery.trim();
+    // 台/臺 互通 + 不分大小寫
+    const norm = (s: string) => s.replace(/臺/g, "台").toLowerCase();
+    // 空格分隔 = 多關鍵字 AND 搜尋(如「台北 國小」)
+    const tokens = norm(deferredQuery.trim()).split(/\s+/).filter(Boolean);
     return courts.filter((c) => {
       if (city !== "all" && c.city !== city) return false;
       if (acOnly && !c.has_ac) return false;
-      if (q && !`${c.name}${c.district ?? ""}${c.address ?? ""}`.includes(q))
-        return false;
+      if (tokens.length > 0) {
+        const hay = norm(
+          `${c.name}${c.city}${c.district ?? ""}${c.address ?? ""}`
+        );
+        if (!tokens.every((t) => hay.includes(t))) return false;
+      }
       return true;
     });
   }, [courts, deferredQuery, city, acOnly]);
